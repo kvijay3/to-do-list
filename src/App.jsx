@@ -296,7 +296,7 @@ function TopicSection({ topic, isFirst, onRenameTopic, onDeleteTopic, onAddTask,
         ) : (
           <button
             onClick={() => setAddingTask(true)}
-            className="flex items-center gap-2 py-1 text-sm text-gray-300 hover:text-gray-500 transition-colors w-full text-left"
+            className="flex items-center gap-2 py-0.5 text-sm text-gray-300 hover:text-gray-500 transition-colors w-full text-left"
           >
             <span className="w-4 h-4 border border-gray-200 rounded inline-block" />
             Add a task
@@ -369,25 +369,27 @@ function TaskRow({ task, topicId, topicName, onToggle, onUpdate, onDelete, onSet
       >
         {task.text}
       </div>
-      <button
-        onClick={() => onToggleAsap(topicId, task.id)}
-        className={`flex-shrink-0 transition-colors ${task.asap ? 'text-gray-700' : 'text-gray-300 hover:text-gray-500 opacity-0 group-hover:opacity-100'}`}
-        title="Mark as ASAP"
-      >
-        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M5 19h14a2 2 0 001.732-3l-7-12a2 2 0 00-3.464 0l-7 12A2 2 0 005 19z" />
-        </svg>
-      </button>
-      <div className="flex items-center gap-1 flex-shrink-0">
-        <svg className="w-3.5 h-3.5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
-        <input
-          type="date"
-          value={task.date || ''}
-          onChange={e => onSetDate(topicId, task.id, e.target.value)}
-          className={`text-xs text-gray-400 border-none bg-transparent outline-none cursor-pointer ${task.date ? 'text-gray-500' : 'opacity-0 group-hover:opacity-100'}`}
-        />
+      <div className="w-44 flex-shrink-0 flex items-center justify-end gap-1">
+        <button
+          onClick={() => onToggleAsap(topicId, task.id)}
+          className={`transition-colors ${task.asap ? 'text-gray-700' : 'text-gray-300 hover:text-gray-500 opacity-0 group-hover:opacity-100'}`}
+          title="Mark as ASAP"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M5 19h14a2 2 0 001.732-3l-7-12a2 2 0 00-3.464 0l-7 12A2 2 0 005 19z" />
+          </svg>
+        </button>
+        <div className="flex items-center gap-1">
+          <svg className="w-3.5 h-3.5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <input
+            type="date"
+            value={task.date || ''}
+            onChange={e => onSetDate(topicId, task.id, e.target.value)}
+            className={`text-xs text-gray-400 border-none bg-transparent outline-none cursor-pointer ${task.date ? 'text-gray-500' : 'opacity-0 group-hover:opacity-100'}`}
+          />
+        </div>
       </div>
     </div>
   )
@@ -474,10 +476,10 @@ function AddTopicRow({ onAdd }) {
 
   if (!active) {
     return (
-      <div className="mt-8">
+      <div className="mt-6">
         <button
           onClick={() => setActive(true)}
-          className="text-sm text-gray-300 hover:text-gray-500 transition-colors"
+          className="text-lg font-semibold text-gray-300 hover:text-gray-500 transition-colors py-1"
         >
           + Add a topic
         </button>
@@ -486,7 +488,7 @@ function AddTopicRow({ onAdd }) {
   }
 
   return (
-    <div className="mt-8">
+    <div className="mt-6">
       <input
         ref={inputRef}
         type="text"
@@ -495,7 +497,7 @@ function AddTopicRow({ onAdd }) {
         onKeyDown={handleKeyDown}
         onBlur={handleBlur}
         placeholder="Type a topic name and press Enter"
-        className="text-lg font-semibold text-gray-900 outline-none bg-transparent placeholder-gray-300 w-full"
+        className="text-lg font-semibold text-gray-900 outline-none bg-transparent placeholder-gray-300 w-full py-1"
       />
     </div>
   )
