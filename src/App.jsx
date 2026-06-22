@@ -507,7 +507,7 @@ function SavingsWidget({ saved, goal, onSetSavings }) {
           ) : (
             <>
               <span className="text-2xl font-semibold text-gray-800">
-                {Math.round(pct * 100)}%
+                {(pct * 100).toFixed(1)}%
               </span>
               <span className="text-xs text-gray-400 mt-0.5">
                 ${savedNum.toLocaleString()} / ${goalNum.toLocaleString()}
