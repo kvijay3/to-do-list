@@ -104,6 +104,17 @@ export default function App() {
     }))
   }
 
+  const toggleAsap = (topicId, taskId) => {
+    setData(d => ({
+      ...d,
+      topics: d.topics.map(t =>
+        t.id === topicId
+          ? { ...t, tasks: t.tasks.map(task => task.id === taskId ? { ...task, asap: !task.asap } : task) }
+          : t
+      ),
+    }))
+  }
+
   const setSavings = (field, value) => {
     setData(d => ({
       ...d,
@@ -117,6 +128,7 @@ export default function App() {
         <div className="flex-1 min-w-0">
           <h1 className="text-3xl font-bold mb-12 text-gray-900">Tasks</h1>
           <div className="space-y-1">
+            <AsapSection topics={data.topics} onToggleAsap={toggleAsap} onToggleTask={toggleTask} />
             {data.topics.map((topic, i) => (
               <TopicSection
                 key={topic.id}
@@ -129,6 +141,7 @@ export default function App() {
                 onToggleTask={toggleTask}
                 onDeleteTask={deleteTask}
                 onSetTaskDate={setTaskDate}
+                onToggleAsap={toggleAsap}
               />
             ))}
             <AddTopicRow onAdd={addTopic} />
@@ -148,7 +161,53 @@ export default function App() {
   )
 }
 
-function TopicSection({ topic, isFirst, onRenameTopic, onDeleteTopic, onAddTask, onUpdateTask, onToggleTask, onDeleteTask, onSetTaskDate }) {
+function AsapSection({ topics, onToggleAsap, onToggleTask }) {
+  const asapTasks = []
+  topics.forEach(topic => {
+    topic.tasks.forEach(task => {
+      if (task.asap && !task.done) {
+        asapTasks.push({ ...task, topicId: topic.id, topicName: topic.name })
+      }
+    })
+  })
+
+  if (asapTasks.length === 0) return null
+
+  return (
+    <div className="pb-10 mb-2 border-b border-gray-100">
+      <div className="flex items-center gap-2 mb-3">
+        <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M5 19h14a2 2 0 001.732-3l-7-12a2 2 0 00-3.464 0l-7 12A2 2 0 005 19z" />
+        </svg>
+        <h2 className="text-lg font-semibold text-gray-900">ASAP</h2>
+      </div>
+      <div className="ml-6">
+        {asapTasks.map(task => (
+          <div key={task.id} className="flex items-center gap-2 py-0.5 group/asap-task">
+            <div className="w-6 flex-shrink-0" />
+            <button
+              onClick={() => onToggleTask(task.topicId, task.id)}
+              className="w-4 h-4 border rounded flex-shrink-0 flex items-center justify-center border-gray-300 hover:border-gray-400 transition-colors"
+            />
+            <span className="text-sm text-gray-700 flex-1">{task.text}</span>
+            <span className="text-xs text-gray-400 flex-shrink-0">{task.topicName}</span>
+            <button
+              onClick={() => onToggleAsap(task.topicId, task.id)}
+              className="flex-shrink-0 text-gray-700 hover:text-gray-500 transition-colors"
+              title="Remove from ASAP"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M5 19h14a2 2 0 001.732-3l-7-12a2 2 0 00-3.464 0l-7 12A2 2 0 005 19z" />
+              </svg>
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function TopicSection({ topic, isFirst, onRenameTopic, onDeleteTopic, onAddTask, onUpdateTask, onToggleTask, onDeleteTask, onSetTaskDate, onToggleAsap }) {
   const [addingTask, setAddingTask] = useState(false)
   const [hovered, setHovered] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -220,10 +279,12 @@ function TopicSection({ topic, isFirst, onRenameTopic, onDeleteTopic, onAddTask,
             key={task.id}
             task={task}
             topicId={topic.id}
+            topicName={topic.name}
             onToggle={onToggleTask}
             onUpdate={onUpdateTask}
             onDelete={onDeleteTask}
             onSetDate={onSetTaskDate}
+            onToggleAsap={onToggleAsap}
           />
         ))}
         {addingTask ? (
@@ -246,7 +307,7 @@ function TopicSection({ topic, isFirst, onRenameTopic, onDeleteTopic, onAddTask,
   )
 }
 
-function TaskRow({ task, topicId, onToggle, onUpdate, onDelete, onSetDate }) {
+function TaskRow({ task, topicId, topicName, onToggle, onUpdate, onDelete, onSetDate, onToggleAsap }) {
   const [hovered, setHovered] = useState(false)
   const ref = useRef(null)
 
@@ -308,12 +369,26 @@ function TaskRow({ task, topicId, onToggle, onUpdate, onDelete, onSetDate }) {
       >
         {task.text}
       </div>
-      <input
-        type="date"
-        value={task.date || ''}
-        onChange={e => onSetDate(topicId, task.id, e.target.value)}
-        className={`text-xs text-gray-400 border-none bg-transparent outline-none cursor-pointer flex-shrink-0 ${task.date ? 'text-gray-500' : 'opacity-0 group-hover:opacity-100'}`}
-      />
+      <button
+        onClick={() => onToggleAsap(topicId, task.id)}
+        className={`flex-shrink-0 transition-colors ${task.asap ? 'text-gray-700' : 'text-gray-300 hover:text-gray-500 opacity-0 group-hover:opacity-100'}`}
+        title="Mark as ASAP"
+      >
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M5 19h14a2 2 0 001.732-3l-7-12a2 2 0 00-3.464 0l-7 12A2 2 0 005 19z" />
+        </svg>
+      </button>
+      <div className="flex items-center gap-1 flex-shrink-0">
+        <svg className="w-3.5 h-3.5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+        <input
+          type="date"
+          value={task.date || ''}
+          onChange={e => onSetDate(topicId, task.id, e.target.value)}
+          className={`text-xs text-gray-400 border-none bg-transparent outline-none cursor-pointer ${task.date ? 'text-gray-500' : 'opacity-0 group-hover:opacity-100'}`}
+        />
+      </div>
     </div>
   )
 }
@@ -360,7 +435,7 @@ function NewTaskInput({ topicId, onAdd, onDone }) {
         placeholder="Type a task and press Enter"
         className="text-sm outline-none flex-1 py-0.5 bg-transparent text-gray-700 placeholder-gray-300"
       />
-      <div className="w-32 flex-shrink-0" />
+      <div className="w-44 flex-shrink-0" />
     </div>
   )
 }
