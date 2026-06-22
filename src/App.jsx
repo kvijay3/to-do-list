@@ -122,6 +122,28 @@ export default function App() {
     }))
   }
 
+  const reorderTopics = (fromIndex, toIndex) => {
+    setData(d => {
+      const topics = [...d.topics]
+      const [moved] = topics.splice(fromIndex, 1)
+      topics.splice(toIndex, 0, moved)
+      return { ...d, topics }
+    })
+  }
+
+  const reorderTasks = (topicId, fromIndex, toIndex) => {
+    setData(d => ({
+      ...d,
+      topics: d.topics.map(t => {
+        if (t.id !== topicId) return t
+        const tasks = [...t.tasks]
+        const [moved] = tasks.splice(fromIndex, 1)
+        tasks.splice(toIndex, 0, moved)
+        return { ...t, tasks }
+      }),
+    }))
+  }
+
   return (
     <div className="min-h-screen bg-white text-gray-800">
       <div className="max-w-5xl mx-auto px-6 py-20 flex gap-12">
@@ -133,6 +155,7 @@ export default function App() {
               <TopicSection
                 key={topic.id}
                 topic={topic}
+                topicIndex={i}
                 isFirst={i === 0}
                 onRenameTopic={renameTopic}
                 onDeleteTopic={deleteTopic}
@@ -142,6 +165,8 @@ export default function App() {
                 onDeleteTask={deleteTask}
                 onSetTaskDate={setTaskDate}
                 onToggleAsap={toggleAsap}
+                onReorderTopics={reorderTopics}
+                onReorderTasks={reorderTasks}
               />
             ))}
             <AddTopicRow onAdd={addTopic} />
@@ -207,7 +232,7 @@ function AsapSection({ topics, onToggleAsap, onToggleTask }) {
   )
 }
 
-function TopicSection({ topic, isFirst, onRenameTopic, onDeleteTopic, onAddTask, onUpdateTask, onToggleTask, onDeleteTask, onSetTaskDate, onToggleAsap }) {
+function TopicSection({ topic, topicIndex, isFirst, onRenameTopic, onDeleteTopic, onAddTask, onUpdateTask, onToggleTask, onDeleteTask, onSetTaskDate, onToggleAsap, onReorderTopics, onReorderTasks }) {
   const [addingTask, setAddingTask] = useState(false)
   const [hovered, setHovered] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -229,10 +254,52 @@ function TopicSection({ topic, isFirst, onRenameTopic, onDeleteTopic, onAddTask,
     }
   }
 
+  const [dragOver, setDragOver] = useState(false)
+
+  const handleDragStart = (e) => {
+    e.dataTransfer.setData('text/topic', String(topicIndex))
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
+  const handleDragOver = (e) => {
+    if (e.dataTransfer.types.includes('text/topic')) {
+      e.preventDefault()
+      setDragOver(true)
+    }
+  }
+
+  const handleDrop = (e) => {
+    e.preventDefault()
+    setDragOver(false)
+    const fromIndex = parseInt(e.dataTransfer.getData('text/topic'))
+    if (!isNaN(fromIndex) && fromIndex !== topicIndex) {
+      onReorderTopics(fromIndex, topicIndex)
+    }
+  }
+
   return (
-    <div className="group/topic pb-10" onMouseEnter={() => setHovered(true)} onMouseLeave={() => { setHovered(false); setConfirmDelete(false) }}>
+    <div
+      className={`group/topic pb-10 ${dragOver ? 'border-t-2 border-gray-200' : ''}`}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => { setHovered(false); setConfirmDelete(false) }}
+      onDragOver={handleDragOver}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={handleDrop}
+    >
       {/* Topic title row */}
       <div className="flex items-center gap-1 mt-6">
+        <div
+          className="w-6 flex-shrink-0 flex justify-center cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-400"
+          draggable
+          onDragStart={handleDragStart}
+          title="Drag to reorder"
+        >
+          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 6 12">
+            <circle cx="1.5" cy="2" r="1" /><circle cx="4.5" cy="2" r="1" />
+            <circle cx="1.5" cy="6" r="1" /><circle cx="4.5" cy="6" r="1" />
+            <circle cx="1.5" cy="10" r="1" /><circle cx="4.5" cy="10" r="1" />
+          </svg>
+        </div>
         <div className="w-6 flex-shrink-0 flex justify-center">
           {hovered && !confirmDelete && (
             <button
@@ -274,17 +341,19 @@ function TopicSection({ topic, isFirst, onRenameTopic, onDeleteTopic, onAddTask,
 
       {/* Tasks */}
       <div className="ml-7 mt-1">
-        {topic.tasks.map(task => (
+        {topic.tasks.map((task, taskIndex) => (
           <TaskRow
             key={task.id}
             task={task}
             topicId={topic.id}
             topicName={topic.name}
+            taskIndex={taskIndex}
             onToggle={onToggleTask}
             onUpdate={onUpdateTask}
             onDelete={onDeleteTask}
             onSetDate={onSetTaskDate}
             onToggleAsap={onToggleAsap}
+            onReorderTasks={onReorderTasks}
           />
         ))}
         {addingTask ? (
@@ -307,8 +376,9 @@ function TopicSection({ topic, isFirst, onRenameTopic, onDeleteTopic, onAddTask,
   )
 }
 
-function TaskRow({ task, topicId, topicName, onToggle, onUpdate, onDelete, onSetDate, onToggleAsap }) {
+function TaskRow({ task, topicId, topicName, taskIndex, onToggle, onUpdate, onDelete, onSetDate, onToggleAsap, onReorderTasks }) {
   const [hovered, setHovered] = useState(false)
+  const [dragOver, setDragOver] = useState(false)
   const ref = useRef(null)
 
   const handleKeyDown = (e) => {
@@ -330,12 +400,50 @@ function TaskRow({ task, topicId, topicName, onToggle, onUpdate, onDelete, onSet
     }
   }
 
+  const handleDragStart = (e) => {
+    e.dataTransfer.setData('text/task', JSON.stringify({ topicId, taskIndex }))
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
+  const handleDragOver = (e) => {
+    if (e.dataTransfer.types.includes('text/task')) {
+      e.preventDefault()
+      setDragOver(true)
+    }
+  }
+
+  const handleDrop = (e) => {
+    e.preventDefault()
+    setDragOver(false)
+    try {
+      const data = JSON.parse(e.dataTransfer.getData('text/task'))
+      if (data.topicId === topicId && data.taskIndex !== taskIndex) {
+        onReorderTasks(topicId, data.taskIndex, taskIndex)
+      }
+    } catch (err) { /* ignore */ }
+  }
+
   return (
     <div
-      className="flex items-center gap-2 py-0.5 group/task"
+      className={`flex items-center gap-2 py-0.5 group/task ${dragOver ? 'border-t-2 border-gray-200' : ''}`}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onDragOver={handleDragOver}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={handleDrop}
     >
+      <div
+        className="w-3 flex-shrink-0 flex justify-center cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-400"
+        draggable
+        onDragStart={handleDragStart}
+        title="Drag to reorder"
+      >
+        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 6 12">
+          <circle cx="1.5" cy="2" r="1" /><circle cx="4.5" cy="2" r="1" />
+          <circle cx="1.5" cy="6" r="1" /><circle cx="4.5" cy="6" r="1" />
+          <circle cx="1.5" cy="10" r="1" /><circle cx="4.5" cy="10" r="1" />
+        </svg>
+      </div>
       <div className="w-6 flex-shrink-0 flex justify-center">
         {hovered && (
           <button
@@ -430,6 +538,7 @@ function NewTaskInput({ topicId, onAdd, onDone }) {
 
   return (
     <div className="flex items-center gap-2 py-0.5">
+      <div className="w-3 flex-shrink-0" />
       <div className="w-6 flex-shrink-0" />
       <span className="w-4 h-4 border border-gray-300 rounded inline-block flex-shrink-0" />
       <input
